@@ -1,0 +1,72 @@
+diff --git a/Lock/ReaderInterface.php b/Lock/ReaderInterface.php
+index 33490f513749..7a99b3d0b0a4 100644
+--- a/Lock/ReaderInterface.php
++++ b/Lock/ReaderInterface.php
+@@ -1,10 +1,15 @@
+ <?php
++
++declare(strict_types=1);
++
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+ namespace Magento\Framework\MessageQueue\Lock;
+
++use Magento\Framework\MessageQueue\LockInterface;
++
+ /**
+  * Message lock reader interface
+  */
+@@ -13,9 +18,9 @@ interface ReaderInterface
+     /**
+      * Get lock from storage
+      *
+-     * @param \Magento\Framework\MessageQueue\LockInterface $lock
++     * @param LockInterface $lock
+      * @param string $code
+      * @return void
+      */
+-    public function read(\Magento\Framework\MessageQueue\LockInterface $lock, $code);
++    public function read(LockInterface $lock, string $code): void;
+ }
+diff --git a/Lock/WriterInterface.php b/Lock/WriterInterface.php
+index 3d446f283c1c..62216e07aea8 100644
+--- a/Lock/WriterInterface.php
++++ b/Lock/WriterInterface.php
+@@ -1,10 +1,15 @@
+ <?php
++
++declare(strict_types=1);
++
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+ namespace Magento\Framework\MessageQueue\Lock;
+
++use Magento\Framework\MessageQueue\LockInterface;
++
+ /**
+  * Message lock writer
+  */
+@@ -13,15 +18,15 @@ interface WriterInterface
+     /**
+      * Save lock
+      *
+-     * @param \Magento\Framework\MessageQueue\LockInterface $lock
++     * @param LockInterface $lock
+      * @return void
+      */
+-    public function saveLock(\Magento\Framework\MessageQueue\LockInterface $lock);
++    public function saveLock(LockInterface $lock): void;
+
+     /**
+      * Remove outdated locks
+      *
+      * @return void
+      */
+-    public function releaseOutdatedLocks();
++    public function releaseOutdatedLocks(): void;
+ }
+Login to unlock more features

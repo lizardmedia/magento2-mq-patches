@@ -1,0 +1,350 @@
+diff --git a/Test/Unit/Topology/Config/QueueConfigItem/DataMapperTest.php b/Test/Unit/Topology/Config/QueueConfigItem/DataMapperTest.php
+index c84f3bfb0f52..46ea82b887db 100644
+--- a/Test/Unit/Topology/Config/QueueConfigItem/DataMapperTest.php
++++ b/Test/Unit/Topology/Config/QueueConfigItem/DataMapperTest.php
+@@ -1,13 +1,16 @@
+ <?php
++
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
++
+ declare(strict_types=1);
+
+ namespace Magento\Framework\MessageQueue\Test\Unit\Topology\Config\QueueConfigItem;
+
+ use Magento\Framework\Communication\ConfigInterface as CommunicationConfig;
++use Magento\Framework\Exception\LocalizedException;
+ use Magento\Framework\MessageQueue\Rpc\ResponseQueueNameBuilder;
+ use Magento\Framework\MessageQueue\Topology\Config\Data;
+ use Magento\Framework\MessageQueue\Topology\Config\QueueConfigItem\DataMapper;
+@@ -17,34 +20,46 @@
+ class DataMapperTest extends TestCase
+ {
+     /**
+-     * @var MockObject
++     * @var Data|MockObject
+      */
+-    private $configData;
++    private $configDataMock;
+
+     /**
+-     * @var MockObject
++     * @var CommunicationConfig|MockObject
+      */
+-    private $communicationConfig;
++    private $communicationConfigMock;
+
+     /**
+-     * @var MockObject
++     * @var ResponseQueueNameBuilder|MockObject
+      */
+-    private $queueNameBuilder;
++    private $queueNameBuilderMock;
+
+     /**
+      * @var DataMapper
+      */
+     private $model;
+
++    /**
++     * @return void
++     */
+     protected function setUp(): void
+     {
+-        $this->configData = $this->createMock(Data::class);
+-        $this->communicationConfig = $this->createMock(CommunicationConfig::class);
+-        $this->queueNameBuilder = $this->createMock(ResponseQueueNameBuilder::class);
+-        $this->model = new DataMapper($this->configData, $this->communicationConfig, $this->queueNameBuilder);
++        $this->configDataMock = $this->createMock(Data::class);
++        $this->communicationConfigMock = $this->createMock(CommunicationConfig::class);
++        $this->queueNameBuilderMock = $this->createMock(ResponseQueueNameBuilder::class);
++        $this->model = new DataMapper(
++            $this->configDataMock,
++            $this->communicationConfigMock,
++            $this->queueNameBuilderMock
++        );
+     }
+
+-    public function testGetMappedData()
++    /**
++     * @return void
++     *
++     * @throws LocalizedException
++     */
++    public function testGetMappedData(): void
+     {
+         $data = [
+             'ex01' => [
+@@ -100,9 +115,11 @@ public function testGetMappedData()
+             ['topic02', ['name' => 'topic02', 'is_synchronous' => false]],
+         ];
+
+-        $this->communicationConfig->expects($this->exactly(2))->method('getTopic')->willReturnMap($communicationMap);
+-        $this->configData->expects($this->once())->method('get')->willReturn($data);
+-        $this->queueNameBuilder->expects($this->once())
++        $this->communicationConfigMock->expects($this->exactly(2))
++            ->method('getTopic')
++            ->willReturnMap($communicationMap);
++        $this->configDataMock->expects($this->once())->method('get')->willReturn($data);
++        $this->queueNameBuilderMock->expects($this->once())
+             ->method('getQueueName')
+             ->with('topic01')
+             ->willReturn('responseQueue.topic01');
+@@ -114,23 +131,27 @@ public function testGetMappedData()
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'some.queue--amqp' => [
+                 'name' => 'some.queue',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+         ];
+         $this->assertEquals($expectedResult, $actualResult);
+     }
+
+     /**
++     * @return void
++     *
++     * @throws LocalizedException
++     *
+      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+      */
+-    public function testGetMappedDataForWildcard()
++    public function testGetMappedDataForWildcard(): void
+     {
+         $data = [
+             'ex01' => [
+@@ -200,13 +221,15 @@ public function testGetMappedDataForWildcard()
+             'topic08.part2.some.test' =>  ['name' => 'topic08.part2.some.test', 'is_synchronous' => true],
+         ];
+
+-        $this->communicationConfig->expects($this->once())
++        $this->communicationConfigMock->expects($this->once())
+             ->method('getTopic')
+             ->with('topic01')
+             ->willReturn(['name' => 'topic01', 'is_synchronous' => true]);
+-        $this->communicationConfig->expects($this->any())->method('getTopics')->willReturn($communicationData);
+-        $this->configData->expects($this->once())->method('get')->willReturn($data);
+-        $this->queueNameBuilder->expects($this->any())
++        $this->communicationConfigMock->expects($this->any())
++            ->method('getTopics')
++            ->willReturn($communicationData);
++        $this->configDataMock->expects($this->once())->method('get')->willReturn($data);
++        $this->queueNameBuilderMock->expects($this->any())
+             ->method('getQueueName')
+             ->willReturnCallback(function ($value) {
+                 return 'responseQueue.' . $value;
+@@ -219,49 +242,49 @@ public function testGetMappedDataForWildcard()
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'some.queue--amqp' => [
+                 'name' => 'some.queue',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'responseQueue.topic02--amqp' => [
+                 'name' => 'responseQueue.topic02',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'responseQueue.topic03--amqp' => [
+                 'name' => 'responseQueue.topic03',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'responseQueue.topic04.04.04--amqp' => [
+                 'name' => 'responseQueue.topic04.04.04',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'responseQueue.topic05.05--amqp' => [
+                 'name' => 'responseQueue.topic05.05',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ],
+             'responseQueue.topic08.part2.some.test--amqp' => [
+                 'name' => 'responseQueue.topic08.part2.some.test',
+                 'connection' => 'amqp',
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => ['some' => 'arguments'],
+             ]
+         ];
+         $this->assertEquals($expectedResult, $actualResult);
+diff --git a/Topology/Config/QueueConfigItem/DataMapper.php b/Topology/Config/QueueConfigItem/DataMapper.php
+index 7e8d35fb0940..912aa4a6b0fb 100644
+--- a/Topology/Config/QueueConfigItem/DataMapper.php
++++ b/Topology/Config/QueueConfigItem/DataMapper.php
+@@ -1,14 +1,18 @@
+ <?php
++
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
++
++declare(strict_types=1);
++
+ namespace Magento\Framework\MessageQueue\Topology\Config\QueueConfigItem;
+
+-use Magento\Framework\MessageQueue\Topology\Config\Data;
+ use Magento\Framework\Communication\ConfigInterface as CommunicationConfig;
+ use Magento\Framework\Exception\LocalizedException;
+ use Magento\Framework\MessageQueue\Rpc\ResponseQueueNameBuilder;
++use Magento\Framework\MessageQueue\Topology\Config\Data;
+ use Magento\Framework\Phrase;
+
+ /**
+@@ -59,21 +63,29 @@ public function __construct(
+      * Get mapped config data.
+      *
+      * @return array
++     * @throws LocalizedException
+      */
+-    public function getMappedData()
++    public function getMappedData(): array
+     {
+         if (null === $this->mappedData) {
+-            $this->mappedData = [];
++            $mappedData = [];
+             foreach ($this->configData->get() as $exchange) {
+                 $connection = $exchange['connection'];
+                 foreach ($exchange['bindings'] as $binding) {
+                     if ($binding['destinationType'] === 'queue') {
+-                        $queueItems = $this->createQueueItems($binding['destination'], $binding['topic'], $connection);
+-                        $this->mappedData = array_merge($this->mappedData, $queueItems);
++                        $queueItems = $this->createQueueItems(
++                            (string)$binding['destination'],
++                            (string)$binding['topic'],
++                            (array)$binding['arguments'],
++                            (string)$connection
++                        );
++                        $mappedData[] = $queueItems;
+                     }
+                 }
+             }
++            $this->mappedData = array_merge([], ...$mappedData);
+         }
++
+         return $this->mappedData;
+     }
+
+@@ -82,10 +94,12 @@ public function getMappedData()
+      *
+      * @param string $name
+      * @param string $topic
++     * @param array $arguments
+      * @param string $connection
+      * @return array
++     * @throws LocalizedException
+      */
+-    private function createQueueItems($name, $topic, $connection)
++    private function createQueueItems(string $name, string $topic, array $arguments, string $connection): array
+     {
+         $output = [];
+         $synchronousTopics = [];
+@@ -103,7 +117,7 @@ private function createQueueItems($name, $topic, $connection)
+                 'connection' => $connection,
+                 'durable' => true,
+                 'autoDelete' => false,
+-                'arguments' => [],
++                'arguments' => $arguments,
+             ];
+         }
+
+@@ -112,8 +126,9 @@ private function createQueueItems($name, $topic, $connection)
+             'connection' => $connection,
+             'durable' => true,
+             'autoDelete' => false,
+-            'arguments' => [],
++            'arguments' => $arguments,
+         ];
++
+         return $output;
+     }
+
+@@ -124,15 +139,14 @@ private function createQueueItems($name, $topic, $connection)
+      * @return bool
+      * @throws LocalizedException
+      */
+-    private function isSynchronousTopic($topicName)
++    private function isSynchronousTopic(string $topicName): bool
+     {
+         try {
+             $topic = $this->communicationConfig->getTopic($topicName);
+-            $isSync = (bool)$topic[CommunicationConfig::TOPIC_IS_SYNCHRONOUS];
+-        } catch (LocalizedException $e) {
++            return (bool)$topic[CommunicationConfig::TOPIC_IS_SYNCHRONOUS];
++        } catch (LocalizedException $exception) {
+             throw new LocalizedException(new Phrase('Error while checking if topic is synchronous'));
+         }
+-        return $isSync;
+     }
+
+     /**
+@@ -141,7 +155,7 @@ private function isSynchronousTopic($topicName)
+      * @param string $wildcard
+      * @return array
+      */
+-    private function matchSynchronousTopics($wildcard)
++    private function matchSynchronousTopics(string $wildcard): array
+     {
+         $topicDefinitions = array_filter(
+             $this->communicationConfig->getTopics(),
+@@ -152,11 +166,13 @@ function ($item) {
+
+         $topics = [];
+         $pattern = $this->buildWildcardPattern($wildcard);
++
+         foreach (array_keys($topicDefinitions) as $topicName) {
+             if (preg_match($pattern, $topicName)) {
+                 $topics[$topicName] = $topicName;
+             }
+         }
++
+         return $topics;
+     }
+
+@@ -166,11 +182,10 @@ function ($item) {
+      * @param string $wildcardKey
+      * @return string
+      */
+-    private function buildWildcardPattern($wildcardKey)
++    private function buildWildcardPattern(string $wildcardKey): string
+     {
+         $pattern = '/^' . str_replace('.', '\.', $wildcardKey);
+-        $pattern = str_replace('#', '.+', $pattern);
+-        $pattern = str_replace('*', '[^\.]+', $pattern);
++        $pattern = str_replace(['#', '*'], ['.+', '[^\.]+'], $pattern);
+         $pattern .= strpos($wildcardKey, '#') === strlen($wildcardKey) ? '/' : '$/';
+         return $pattern;
+     }
